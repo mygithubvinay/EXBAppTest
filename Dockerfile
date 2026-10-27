@@ -1,14 +1,21 @@
-# Lightweight static web server
-FROM nginx:alpine
+# Serves a downloaded/published ArcGIS Experience Builder app as a static site.
+# Put this Dockerfile and nginx.conf next to the downloaded app folder's contents
+# (index.html, dist/, widgets/, etc.), then build from that folder.
 
-# Copy the web app into nginx's default web root
-COPY index.html /usr/share/nginx/html/index.html
+FROM nginx:1.27-alpine
 
-# nginx listens on port 80 inside the container
+# Remove default site
+RUN rm -rf /usr/share/nginx/html/*
+
+# Custom nginx config (SPA fallback, caching, gzip)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy the downloaded app
+COPY . /usr/share/nginx/html
+
+# Don't ship the Docker files inside the web root
+RUN rm -f /usr/share/nginx/html/Dockerfile /usr/share/nginx/html/nginx.conf
+
 EXPOSE 80
-
-# Simple health check
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -qO- http://localhost/ >/dev/null || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
